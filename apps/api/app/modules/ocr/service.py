@@ -102,6 +102,8 @@ async def run_ocr_job(job_id: uuid.UUID) -> str:
         result = provider.extract(data, mime)
     except OCRUnsupported as exc:
         status, reason = "failed", str(exc)[:200]
+    except FileNotFoundError:
+        status, reason = "failed", "Stored file is no longer available; upload it again"
     except (OCRTransientError, TimeoutError, OSError) as exc:
         status, reason = "retry", "Temporary OCR failure"
         log.warning("ocr_transient_failure", job_id=str(job_id), error=type(exc).__name__)

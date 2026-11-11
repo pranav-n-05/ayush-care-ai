@@ -1,6 +1,7 @@
 import hashlib
 import json
 import uuid
+from datetime import timedelta
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -37,6 +38,7 @@ from app.providers.llm import (
 )
 
 log = get_logger("summaries")
+RUNNING_TIMEOUT = timedelta(minutes=10)  # reclaim jobs orphaned by a crashed/stopped worker
 ATTESTATION = (
     "I have reviewed this draft against its cited sources and approve this version for the record."
 )
@@ -171,7 +173,8 @@ async def run_summary_job(job_id: uuid.UUID) -> str:
         )
         if job is None:
             return "missing"
-        if job.status in ("succeeded", "failed", "running"):
+        stuck = job.status == "running" and utcnow() - job.updated_at > RUNNING_TIMEOUT
+        if job.status in ("succeeded", "failed") or (job.status == "running" and not stuck):
             return job.status
         job.status, job.attempts = "running", job.attempts + 1
         org_id, encounter_id = job.organization_id, job.encounter_id

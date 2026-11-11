@@ -31,3 +31,14 @@ Repository started empty (README + LICENSE). Built backend, frontend, infrastruc
 
 ### Next bounded task
 Add Playwright e2e for the core journey + axe accessibility checks, then the password-reset flow.
+
+## 2026-11-11 — Render free-tier deployment support
+
+* Added `render.yaml` (2 free Docker web services + free PostgreSQL), in-process job dispatcher
+  with startup recovery, `postgres://` URL normalization, `$PORT` binding, runtime `/api/v1`
+  proxy route (replaces build-time rewrites), `AYUSH_PUBLIC_DEMO` seeding flag, clear errors
+  for files lost on ephemeral disks, reclaim of orphaned `running` summary jobs.
+* Bugs found and fixed: dispatcher selection ignored `inprocess` (caught by Render-like run);
+  missing stored file was retried as a transient OCR error; proxy allowed `..` segments.
+* Verified: 93 backend tests, 15 frontend tests, lint/types/build clean, Render-like local run.
+* Not verified: the real Render deployment (requires the account owner to apply the Blueprint).

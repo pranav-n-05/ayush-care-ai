@@ -1,0 +1,77 @@
+# Render Blueprint — FREE tier synthetic public demo.
+# Free-tier trade-offs (documented in docs/deployment/render.md):
+# - services sleep when idle (first request ~30-60 s)
+# - free PostgreSQL expires after 30 days unless upgraded
+# - no persistent disk: uploaded files are lost on restart/redeploy
+# - no separate worker: OCR/summary jobs run in-process in the API (AYUSH_JOB_DISPATCHER=inprocess)
+# Synthetic data only. Not for real patients.
+
+services:
+  - type: web
+    name: ayushcare-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: ./apps/api
+    buildFilter:
+      paths:
+        - apps/api/**
+    healthCheckPath: /health/ready
+    # Free instances have no pre-deploy step: migrate (Alembic) and idempotently seed the
+    # synthetic demo before starting the server. The app itself never creates tables.
+    dockerCommand: >-
+      sh -c "alembic upgrade head && python -m app.cli seed-demo &&
+      exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-access-log"
+    autoDeploy: true
+    envVars:
+      - key: AYUSH_ENVIRONMENT
+        value: production
+      - key: AYUSH_PUBLIC_DEMO
+        value: "true"
+      - key: AYUSH_DATABASE_URL
+        fromDatabase:
+          name: ayushcare-db
+          property: connectionString
+      - key: AYUSH_JOB_DISPATCHER
+        value: inprocess
+      - key: AYUSH_COOKIE_SECURE
+        value: "true"
+      - key: AYUSH_STORAGE_ROOT
+        value: /tmp/ayushcare-storage
+      # Origins allowed to send state-changing requests: the web service's public URL.
+      # If Render assigns a different URL (name taken), update this value.
+      - key: AYUSH_TRUSTED_ORIGINS
+        value: '["https://ayushcare-web.onrender.com"]'
+      - key: AYUSH_CORS_ALLOWED_ORIGINS
+        value: '["https://ayushcare-web.onrender.com"]'
+      - key: AYUSH_DB_POOL_SIZE
+        value: "3"
+      - key: AYUSH_DB_MAX_OVERFLOW
+        value: "2"
+
+  - type: web
+    name: ayushcare-web
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./apps/web/Dockerfile
+    dockerContext: ./apps/web
+    buildFilter:
+      paths:
+        - apps/web/**
+    healthCheckPath: /login
+    autoDeploy: true
+    envVars:
+      # Public URL of the API service (read at runtime by the /api/v1 proxy route).
+      # If Render assigns a different URL (name taken), update this value.
+      - key: API_INTERNAL_URL
+        value: https://ayushcare-api.onrender.com
+
+databases:
+  - name: ayushcare-db
+    databaseName: ayushcare
+    user: ayushcare
+    plan: free
+    region: singapore
+    postgresMajorVersion: "17"

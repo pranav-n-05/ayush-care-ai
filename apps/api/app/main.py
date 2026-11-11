@@ -23,6 +23,7 @@ from app.modules.integrations.routes import router as integrations_router
 from app.modules.patients.routes import router as patients_router
 from app.modules.summaries.routes import router as summaries_router
 from app.modules.triage.routes import router as triage_router
+from app.workers.dispatch import InProcessDispatcher, get_dispatcher, recover_jobs
 
 access_log = get_logger("access")
 
@@ -38,7 +39,12 @@ practitioner approves a specific version.
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     configure_logging()
+    dispatcher = get_dispatcher()
+    if isinstance(dispatcher, InProcessDispatcher):
+        await recover_jobs()
     yield
+    if isinstance(dispatcher, InProcessDispatcher):
+        await dispatcher.drain()
     await dispose_engine()
 
 

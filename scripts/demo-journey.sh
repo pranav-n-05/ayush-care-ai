@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# End-to-end synthetic demo journey through the Next.js proxy (localhost:3000).
+# End-to-end synthetic demo journey through the Next.js proxy. Usage: BASE=https://<web-url> ./scripts/demo-journey.sh
 set -euo pipefail
 TMPF="$(mktemp -d)/synthetic-lab-report.txt"
-B=http://localhost:3000/api/v1; J=$(mktemp); O="Origin: http://localhost:3000"
+BASE=${BASE:-http://localhost:3000}; B=$BASE/api/v1; J=$(mktemp); O="Origin: $BASE"
 login() { curl -s -c $J -b $J -H "$O" -H 'Content-Type: application/json' -d "{\"email\":\"$1\",\"password\":\"Synthetic-Demo-Only-2026\"}" $B/auth/login | python3 -c 'import sys,json;print(json.load(sys.stdin)["csrf_token"])'; }
 CSRF=$(login vaidya@demo.example.org)
 post() { curl -s -b $J -H "$O" -H "X-CSRF-Token: $CSRF" -H 'Content-Type: application/json' "$@"; }
@@ -26,7 +26,7 @@ get "$B/triage/events?encounter_id=$ENC" | py '"red flags: "+str([(e["severity"]
 printf 'SYNTHETIC LAB REPORT\nAllergy: Synthetic penicillin-like agent\nLab: Hemoglobin = 11.9 g/dL\n' > "$TMPF"
 DOC=$(curl -s -b $J -H "$O" -H "X-CSRF-Token: $CSRF" -F file=@"$TMPF" -F document_type=lab_report $B/encounters/$ENC/documents | py 'd["id"]'); echo "document $DOC"
 OJ=$(post -X POST -H "Idempotency-Key: ocr-$RANDOM-$RANDOM" $B/documents/$DOC/process | py 'd["id"]')
-for i in $(seq 1 20); do ST=$(get $B/ocr-jobs/$OJ | py 'd["status"]'); [ "$ST" = succeeded ] || [ "$ST" = failed ] && break; sleep 1; done; echo "ocr job $ST (via Celery worker)"
+for i in $(seq 1 20); do ST=$(get $B/ocr-jobs/$OJ | py 'd["status"]'); [ "$ST" = succeeded ] || [ "$ST" = failed ] && break; sleep 1; done; echo "ocr job $ST"
 for E in $(get $B/documents/$DOC/entities | py '" ".join(e["id"] for e in d)'); do post -X POST -d '{"action":"verify","expected_revision":1}' $B/extracted-entities/$E/review >/dev/null; done; echo "entities verified"
 SJ=$(post -X POST -H "Idempotency-Key: sum-$RANDOM-$RANDOM" $B/encounters/$ENC/summaries/generate | py 'd["id"]')
 for i in $(seq 1 20); do ST=$(get $B/summary-jobs/$SJ | py 'd["status"]'); [ "$ST" = succeeded ] || [ "$ST" = failed ] && break; sleep 1; done; echo "summary job $ST"

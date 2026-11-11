@@ -71,6 +71,8 @@ npm ci
 npm run dev                                  # http://localhost:3000
 ```
 
+Deploy a free public demo on Render: see `docs/deployment/render.md` (one-click Blueprint).
+
 Full containerized stack: `docker compose --profile full up -d --build`, then
 `docker compose exec api python -m app.cli seed-demo` and `./scripts/demo-journey.sh`.
 

@@ -53,8 +53,9 @@ async def bootstrap_platform_admin(email: str, name: str, password: str) -> None
 
 
 async def seed_demo() -> None:
-    if get_settings().environment == "production":
-        raise SystemExit("seed-demo is disabled in production")
+    settings = get_settings()
+    if settings.environment == "production" and not settings.public_demo:
+        raise SystemExit("seed-demo is disabled in production unless AYUSH_PUBLIC_DEMO=true")
     from app.modules.intake.seed import seed_demo_questionnaire
     from app.modules.patients.models import ConsentEvent, ConsentRecord, Patient
     from app.modules.triage.seed import seed_demo_rules

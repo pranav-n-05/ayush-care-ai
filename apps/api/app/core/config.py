@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,7 +26,12 @@ class Settings(BaseSettings):
 
     redis_url: SecretStr = SecretStr("redis://localhost:6379/0")
     # "inline" records jobs without a broker (tests/dev); "celery" publishes after commit.
-    job_dispatcher: Literal["inline", "celery"] = "inline"
+    # "inline": record jobs only (tests). "celery": publish to Redis after commit.
+    # "inprocess": run jobs as asyncio tasks inside the API process (single-instance demos
+    # without a worker, e.g. a free hosting tier). Jobs survive restarts via a startup sweep.
+    job_dispatcher: Literal["inline", "celery", "inprocess"] = "inline"
+    # Public synthetic demo: allows `seed-demo` in production and shows demo banners.
+    public_demo: bool = False
 
     # Sessions / cookies
     session_cookie_name: str = "ayush_session"
@@ -53,6 +58,17 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 30.0
     llm_max_attempts: int = 2
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _async_driver(cls, v: object) -> object:
+        """Accept provider-style URLs (postgres://, postgresql://) and use asyncpg."""
+        raw = v.get_secret_value() if isinstance(v, SecretStr) else v
+        if isinstance(raw, str):
+            for prefix in ("postgres://", "postgresql://"):
+                if raw.startswith(prefix):
+                    return "postgresql+asyncpg://" + raw[len(prefix) :]
+        return v
+
     @model_validator(mode="after")
     def _production_guards(self) -> "Settings":
         if self.environment == "production":
@@ -61,8 +77,8 @@ class Settings(BaseSettings):
                 raise ValueError("Development database credentials are not allowed in production")
             if not self.cookie_secure:
                 raise ValueError("cookie_secure must be true in production")
-            if self.job_dispatcher != "celery":
-                raise ValueError("production requires the celery job dispatcher")
+            if self.job_dispatcher == "inline":
+                raise ValueError("production requires the celery or inprocess job dispatcher")
         return self
 
 

@@ -138,7 +138,10 @@ async def read_content(
     doc = await get_document(db, ctx.organization_id, document_id)
     if doc.status != "available":
         raise Conflict("Document is not available for download")
-    data = get_storage().get(v.storage_key)
+    try:
+        data = get_storage().get(v.storage_key)
+    except FileNotFoundError as exc:  # e.g. ephemeral disk on a free hosting tier
+        raise Conflict("Stored file is no longer available", code="file_unavailable") from exc
     if hashlib.sha256(data).hexdigest() != v.sha256:
         raise Conflict("Stored file failed its integrity check")
     add_audit(
