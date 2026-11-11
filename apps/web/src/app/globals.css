@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: oklch(0.97 0.02 150);
+  --color-brand-600: oklch(0.52 0.12 150);
+  --color-brand-700: oklch(0.45 0.11 150);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+}

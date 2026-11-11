@@ -1,0 +1,90 @@
+# Local development only. Ports bind to 127.0.0.1. This file is NOT evidence of production
+# readiness, encryption at rest, or backup coverage. See docs/deployment/runbook.md.
+name: ayushcare
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ayushcare
+      POSTGRES_PASSWORD: ayushcare_dev_only
+      POSTGRES_DB: ayushcare
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ayushcare -d ayushcare"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build: ./apps/api
+    profiles: ["full"]
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      AYUSH_DATABASE_URL: postgresql+asyncpg://ayushcare:ayushcare_dev_only@db:5432/ayushcare
+    depends_on:
+      db: { condition: service_healthy }
+
+  api:
+    build: ./apps/api
+    profiles: ["full"]
+    environment:
+      AYUSH_ENVIRONMENT: development
+      AYUSH_DATABASE_URL: postgresql+asyncpg://ayushcare:ayushcare_dev_only@db:5432/ayushcare
+      AYUSH_REDIS_URL: redis://redis:6379/0
+      AYUSH_JOB_DISPATCHER: celery
+      AYUSH_COOKIE_SECURE: "false"
+      AYUSH_STORAGE_ROOT: /data/storage
+    volumes:
+      - storage:/data/storage
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: ./apps/api
+    profiles: ["full"]
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "--beat", "--loglevel=INFO", "--concurrency=2"]
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping --timeout 5 >/dev/null"]
+      interval: 30s
+      timeout: 10s
+    environment:
+      AYUSH_ENVIRONMENT: development
+      AYUSH_DATABASE_URL: postgresql+asyncpg://ayushcare:ayushcare_dev_only@db:5432/ayushcare
+      AYUSH_REDIS_URL: redis://redis:6379/0
+      AYUSH_STORAGE_ROOT: /data/storage
+    volumes:
+      - storage:/data/storage
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        API_INTERNAL_URL: http://api:8000
+    profiles: ["full"]
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  storage:

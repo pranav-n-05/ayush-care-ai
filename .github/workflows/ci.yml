@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ayushcare
+          POSTGRES_PASSWORD: ayushcare_dev_only
+          POSTGRES_DB: ayushcare
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ayushcare" --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.7"
+      - run: uv python install 3.12
+      - run: uv sync --frozen
+      - run: uv run ruff check app tests migrations
+      - run: uv run ruff format --check app tests migrations
+      - run: uv run mypy app
+      - name: Tests (real PostgreSQL, Alembic-built schema)
+        run: uv run pytest -q -p no:cacheprovider
+      - name: Migration drift check
+        env:
+          AYUSH_DATABASE_URL: postgresql+asyncpg://ayushcare:ayushcare_dev_only@localhost:5432/ayushcare
+        run: uv run alembic upgrade head && uv run alembic check
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

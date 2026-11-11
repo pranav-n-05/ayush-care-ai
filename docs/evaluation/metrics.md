@@ -1,0 +1,15 @@
+# Measured results
+
+Only numbers actually measured are listed. Environment: macOS (Apple Silicon), Docker Desktop
+29.7.2, PostgreSQL 17 (container), Python 3.13.0 local venv, Node 22.20.0. Date: 2026-11-11.
+
+| Measurement | Result | Command |
+|---|---|---|
+| Backend tests (real PostgreSQL, Alembic-built schema) | 82 passed, 0 failed, 0 skipped (~43 s wall) | `cd apps/api && uv run pytest -q` |
+| Frontend unit/component tests | 12 passed, 0 failed | `cd apps/web && npm test` |
+| Static checks | ruff: 0 findings; ruff format: clean; mypy `--strict`: 0 errors in 84 files; ESLint: 0; `tsc --noEmit`: 0 | see README "Tests and checks" |
+| Migration drift | `alembic check`: no new operations; up→down→up round trip passes | `test_migrations_downgrade_and_upgrade_roundtrip` |
+| Scripted synthetic journey, local processes and full container stack | completed: intake (Tamil) → demo red flag → upload → OCR via Celery → verify → cited draft (9 claims, 1 contradiction) → approval | `scripts/demo-journey.sh` |
+
+Not measured: code coverage, API latency/throughput, OCR accuracy, summary quality,
+accessibility audit, restore time.
