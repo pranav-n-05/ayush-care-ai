@@ -41,4 +41,13 @@ Add Playwright e2e for the core journey + axe accessibility checks, then the pas
 * Bugs found and fixed: dispatcher selection ignored `inprocess` (caught by Render-like run);
   missing stored file was retried as a transient OCR error; proxy allowed `..` segments.
 * Verified: 93 backend tests, 15 frontend tests, lint/types/build clean, Render-like local run.
-* Not verified: the real Render deployment (requires the account owner to apply the Blueprint).
+
+## 2026-11-12 — Live on Render
+
+* Blueprint applied; services live at https://ayushcare-web.onrender.com and
+  https://ayushcare-api.onrender.com (Singapore, free). Old unused `ayush-care-ai` service
+  (Virginia) deleted.
+* Bug found on first deploy and fixed: quoted `dockerCommand` → exit 127; startup now via
+  `apps/api/start.sh` with `AYUSH_MIGRATE_ON_START` / `AYUSH_SEED_DEMO_ON_START`.
+* Verified live: health check, full demo journey script, browser login to dashboard.
+* Next bounded task: Playwright e2e + axe accessibility checks; password-reset flow.

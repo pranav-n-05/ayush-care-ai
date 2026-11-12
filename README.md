@@ -10,6 +10,10 @@ structured history collection, document digitization and practitioner-reviewed s
 > practitioner's approval of a specific version. No affiliation with SIH or the Ministry of
 > AYUSH is implied.
 
+**Live synthetic demo:** https://ayushcare-web.onrender.com (free tier; first load after idle
+takes ~50 s). Log in with a demo account listed below. Synthetic data only — never enter real
+patient information.
+
 ## What it does
 
 * **Registration** — DOB or age-with-as-of-date (with precision), clinically relevant sex,

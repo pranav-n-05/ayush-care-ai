@@ -9,7 +9,7 @@ Next.js, TypeScript, FastAPI, PostgreSQL, SQLAlchemy, Alembic, Redis, Celery, Do
 - Implemented opaque server-side sessions (Argon2id, hashed tokens, CSRF + origin checks,
   idle/absolute expiry, revocation) and a database-seeded RBAC matrix with organization-scoped
   authorization enforced by service checks and composite tenant foreign keys; covered by
-  82 backend tests on real PostgreSQL.
+  93 backend tests on real PostgreSQL.
 - Developed an OCR → reviewer-verification → AI-draft pipeline with idempotent, bounded Celery
   jobs; drafts are structured outputs whose every claim must cite an existing source revision,
   and approval binds a practitioner to an immutable version under row-level locking.

@@ -41,5 +41,13 @@ the Singapore region:
 The same images and start command were run locally with Render-like settings
 (`AYUSH_ENVIRONMENT=production`, `postgres://` URL, `PORT=10000`, Secure cookies, in-process
 jobs, fresh database); `scripts/demo-journey.sh` completed and startup job recovery worked.
-The actual Render deployment depends on the Render account and was not performed by this
-repository's tooling.
+
+## Live deployment (2026-11-12)
+
+* Web: https://ayushcare-web.onrender.com · API: https://ayushcare-api.onrender.com
+  (`/health/ready` → database ok). Region: Singapore, free plans.
+* `BASE=https://ayushcare-web.onrender.com ./scripts/demo-journey.sh` completed against the live
+  services (intake → red flag → upload → OCR → verify → cited draft → approval), and the
+  practitioner login reached the dashboard in a browser.
+* First deploy failed (exit 127): Render passed the quoted `sh -c` `dockerCommand` as a single
+  executable name. Fixed by moving startup steps into `apps/api/start.sh`.

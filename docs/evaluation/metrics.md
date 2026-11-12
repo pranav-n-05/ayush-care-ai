@@ -12,5 +12,7 @@ Only numbers actually measured are listed. Environment: macOS (Apple Silicon), D
 | Scripted synthetic journey, local processes and full container stack | completed: intake (Tamil) → demo red flag → upload → OCR via Celery → verify → cited draft (9 claims, 1 contradiction) → approval | `scripts/demo-journey.sh` |
 | Render-like run (production mode, `postgres://` URL, `$PORT`, Secure cookies, in-process jobs, fresh DB) | journey completed; startup recovery resumed a queued summary job | `BASE=http://localhost:3001 scripts/demo-journey.sh` |
 
+| Live Render deployment (free tier) | journey completed against https://ayushcare-web.onrender.com on 2026-11-12 | `BASE=https://ayushcare-web.onrender.com scripts/demo-journey.sh` |
+
 Not measured: code coverage, API latency/throughput, OCR accuracy, summary quality,
 accessibility audit, restore time.
