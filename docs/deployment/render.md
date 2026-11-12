@@ -5,7 +5,7 @@ the Singapore region:
 
 | Resource | Purpose |
 |---|---|
-| `ayushcare-api` | FastAPI. Start command runs `alembic upgrade head`, then `seed-demo` (idempotent), then uvicorn on `$PORT`. OCR and summary jobs run in-process (`AYUSH_JOB_DISPATCHER=inprocess`). |
+| `ayushcare-api` | FastAPI. `start.sh` runs `alembic upgrade head` and `seed-demo` (idempotent) when `AYUSH_MIGRATE_ON_START` / `AYUSH_SEED_DEMO_ON_START` are true, then uvicorn on `$PORT`. OCR and summary jobs run in-process (`AYUSH_JOB_DISPATCHER=inprocess`). |
 | `ayushcare-web` | Next.js standalone server. `/api/v1/*` is proxied at runtime to `API_INTERNAL_URL`. |
 | `ayushcare-db` | PostgreSQL 17 (free). |
 

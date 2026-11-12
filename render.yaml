@@ -18,16 +18,17 @@ services:
       paths:
         - apps/api/**
     healthCheckPath: /health/ready
-    # Free instances have no pre-deploy step: migrate (Alembic) and idempotently seed the
-    # synthetic demo before starting the server. The app itself never creates tables.
-    dockerCommand: >-
-      sh -c "alembic upgrade head && python -m app.cli seed-demo &&
-      exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-access-log"
     autoDeploy: true
     envVars:
       - key: AYUSH_ENVIRONMENT
         value: production
       - key: AYUSH_PUBLIC_DEMO
+        value: "true"
+      # Free instances have no pre-deploy step: start.sh migrates (Alembic) and
+      # idempotently seeds the synthetic demo before starting uvicorn on $PORT.
+      - key: AYUSH_MIGRATE_ON_START
+        value: "true"
+      - key: AYUSH_SEED_DEMO_ON_START
         value: "true"
       - key: AYUSH_DATABASE_URL
         fromDatabase:
